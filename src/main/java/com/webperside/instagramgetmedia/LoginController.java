@@ -22,16 +22,18 @@ public class LoginController {
     @GetMapping
     public void login(HttpServletResponse response) throws IOException {
         final String clientId = "2366115863696167";
-        final String redirectUrl = "";
+        final String redirectUrl = "https://instagram-get-media.herokuapp.com/login/code";
         final String url = "https://www.instagram.com/oauth/authorize?client_id=%s&redirect_uri=%s&scope=user_profile,user_media&response_type=code";
         response.sendRedirect(String.format(url, clientId, redirectUrl));
     }
 
     @GetMapping("/code")
-    public void accessToken(@RequestParam("code") String code){
+    public String handleCode(@RequestParam("code") String code){
 
 //        System.err.println("Code " + code);
 //
 //        restTemplate.postForEntity()
+
+        return code;
     }
 }
