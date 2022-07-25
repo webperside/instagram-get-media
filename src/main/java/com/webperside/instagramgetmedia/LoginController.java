@@ -16,11 +16,12 @@ import java.io.IOException;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/login")
+@RequestMapping
 public class LoginController {
 
     private final RestTemplate restTemplate;
     private final String clientId = "2366115863696167";
+    private final String clientSecret = "4de71a2b94b68f08369994a88ef59644";
     private final String redirectUrl = "https://instagram-get-media.herokuapp.com/login/code";
 
 
@@ -28,15 +29,18 @@ public class LoginController {
         this.restTemplate = restTemplate;
     }
 
-    @GetMapping
+    @GetMapping("/login")
     public void login(HttpServletResponse response) throws IOException {
 
         final String url = "https://www.instagram.com/oauth/authorize?client_id=%s&redirect_uri=%s&scope=user_profile,user_media&response_type=code";
         response.sendRedirect(String.format(url, clientId, redirectUrl));
     }
 
-    @GetMapping("/code")
+    @GetMapping("/login/code")
     public Map<?,?> handleCode(@RequestParam("code") String code){
+
+        final String url = "https://api.instagram.com/oauth/access_token";
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
@@ -44,14 +48,36 @@ public class LoginController {
         MultiValueMap<String, String> map= new LinkedMultiValueMap<String, String>();
         map.add("email", "first.last@example.com");
         map.add("client_id", clientId);
-        map.add("client_secret", "4de71a2b94b68f08369994a88ef59644");
+        map.add("client_secret", clientSecret);
         map.add("grant_type", "authorization_code");
         map.add("redirect_uri", redirectUrl);
         map.add("code", code);
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
 
-        return restTemplate.postForObject("https://api.instagram.com/oauth/access_token", request, Map.class);
+        return restTemplate.postForObject(url, request, Map.class);
+    }
 
-//        return code;
+    @GetMapping("/long-lived-token")
+    public Map<?,?> getLongLivedToken(@RequestParam("accessToken") String accessToken){
+        final String url = "https://graph.instagram.com/access_token" +
+                "?grant_type=ig_exchange_token" +
+                "&client_secret=%s" +
+                "&access_token=%s";
+
+        return restTemplate.getForObject(String.format(url, clientSecret, accessToken), Map.class);
+    }
+
+    @GetMapping("/me")
+    public Map<?,?> me(@RequestParam("llToken") String llToken){
+        final String url = "https://graph.instagram.com/me?fields=id,username&access_token=%s";
+
+        return restTemplate.getForObject(String.format(url, llToken), Map.class);
+    }
+
+    @GetMapping("/media")
+    public Map<?,?> getMedia(@RequestParam("llToken") String llToken){
+        final String url = "https://graph.instagram.com/me/media?fields=id,media_type,media_url,username,timestamp&access_token=%s";
+
+        return restTemplate.getForObject(String.format(url, llToken), Map.class);
     }
 }
